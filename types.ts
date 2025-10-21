@@ -1,5 +1,10 @@
 import type React from 'react';
 
+export interface Synonym {
+  word: string;
+  comparison: string;
+}
+
 export interface VocabularyWord {
   id: string;
   word: string;
@@ -8,12 +13,15 @@ export interface VocabularyWord {
   vietnameseMeaning: string;
   definition: string;
   example: string;
+  notes?: string;
+  synonyms?: Synonym[];
 }
 
 export interface Topic {
   id: string;
   name:string;
-  icon: React.ReactNode;
+  // FIX: Changed type from React.ReactNode to React.ReactElement for better type safety with React.cloneElement.
+  icon: React.ReactElement;
   wordCount?: number;
   createdAt?: string;
   words?: VocabularyWord[];

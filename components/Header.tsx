@@ -22,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ title, icon, showBackButton, onBack }) 
         </div>
         <h2 className="ml-4 text-2xl font-semibold text-onSurface">{title}</h2>
       </div>
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2">
         <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-onSurfaceSecondary" />
           <input

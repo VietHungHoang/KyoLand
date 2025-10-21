@@ -3,20 +3,22 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import VocabularyView from './components/VocabularyView';
 import CreateTopicModal from './components/CreateTopicModal';
+import AddWordManuallyModal from './components/AddWordManuallyModal';
 import TopicDetailView from './components/TopicDetailView';
 import { SIDEBAR_SECTIONS } from './constants';
-import type { Topic } from './types';
+import type { Topic, VocabularyWord } from './types';
 import { BookOpenIcon, ChatBubbleIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
   const [sidebarSections, setSidebarSections] = useState(SIDEBAR_SECTIONS);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
+  const [isAddWordManuallyModalOpen, setIsAddWordManuallyModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState('Vocabulary');
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
 
   const allTopics = sidebarSections.flatMap(section => section.topics);
-
   const vocabularyTopics = sidebarSections.find(section => section.title === 'Vocabulary')?.topics || [];
+  const activeTopic = allTopics.find(t => t.id === activeTopicId);
 
   const handleCreateTopic = (topicName: string) => {
     const newTopic: Topic = {
@@ -39,7 +41,7 @@ const App: React.FC = () => {
         return section;
       })
     );
-    setIsModalOpen(false);
+    setIsCreateTopicModalOpen(false);
   };
 
   const handleDeleteTopic = (topicIdToDelete: string) => {
@@ -58,14 +60,39 @@ const App: React.FC = () => {
       }))
     );
   };
+  
+  const handleAddWord = (topicId: string, newWord: VocabularyWord) => {
+    setSidebarSections(currentSections =>
+      currentSections.map(section => {
+        if (section.title === 'Vocabulary') {
+          return {
+            ...section,
+            topics: section.topics.map(topic => {
+              if (topic.id === topicId) {
+                const updatedWords = [...(topic.words || []), newWord];
+                return {
+                  ...topic,
+                  words: updatedWords,
+                  wordCount: updatedWords.length,
+                };
+              }
+              return topic;
+            }),
+          };
+        }
+        return section;
+      })
+    );
+    setIsAddWordManuallyModalOpen(false);
+  };
 
   const renderContent = () => {
     if (selectedSection === 'Vocabulary') {
       const activeTopic = vocabularyTopics.find(t => t.id === activeTopicId);
       if (activeTopic) {
-        return <TopicDetailView topic={activeTopic} />;
+        return <TopicDetailView topic={activeTopic} onOpenAddWordManuallyModal={() => setIsAddWordManuallyModalOpen(true)} />;
       }
-      return <VocabularyView topics={vocabularyTopics} onOpenCreateTopicModal={() => setIsModalOpen(true)} onDeleteTopic={handleDeleteTopic} onSelectTopic={setActiveTopicId} />;
+      return <VocabularyView topics={vocabularyTopics} onOpenCreateTopicModal={() => setIsCreateTopicModalOpen(true)} onDeleteTopic={handleDeleteTopic} onSelectTopic={setActiveTopicId} />;
     }
     
     if (selectedSection === 'Grammar') {
@@ -93,7 +120,7 @@ const App: React.FC = () => {
         title: activeTopic?.name || 'Topic',
         icon: activeTopic?.icon || <BookOpenIcon className="w-5 h-5"/>,
         showBackButton: true,
-        onBack: () => setActiveTopicId(null)
+        onBack: () => setActiveTopicId(null),
       }
     }
     return {
@@ -117,10 +144,18 @@ const App: React.FC = () => {
         </main>
       </div>
       <CreateTopicModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isCreateTopicModalOpen}
+        onClose={() => setIsCreateTopicModalOpen(false)}
         onCreate={handleCreateTopic}
       />
+      {activeTopic && (
+        <AddWordManuallyModal
+          isOpen={isAddWordManuallyModalOpen}
+          onClose={() => setIsAddWordManuallyModalOpen(false)}
+          onAddWord={(newWord) => handleAddWord(activeTopic.id, newWord)}
+          topicName={activeTopic.name}
+        />
+      )}
     </div>
   );
 };
