@@ -45,7 +45,10 @@ const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onC
         The user is learning English and will provide you with whatever information they know about a word. You must adhere to the following rules:
         1.  **Preserve User Input:** If the user provides specific information (like a definition, an example, or a Vietnamese meaning), you MUST use that exact information in the final JSON output. DO NOT modify or replace it.
         2.  **Complete Missing Information:** For any fields that are missing from the user's input, you must generate the correct information.
-        3.  **Strict JSON Output:** The final output must be a single, valid JSON object that conforms to the specified schema. Do not include any text, markdown, or explanations outside of the JSON block.
+        3.  **Language Requirements:**
+            *   The \`definition\`, \`notes\`, and the \`comparison\` field within each synonym object MUST be in **Vietnamese**.
+            *   All other fields like \`word\`, \`phonetic\`, \`example\` must be in English or their respective standard formats (e.g., IPA).
+        4.  **Strict JSON Output:** The final output must be a single, valid JSON object that conforms to the specified schema. Do not include any text, markdown, or explanations outside of the JSON block.
 
         Here is the user's input for a word in the topic "${topicName}":
         ---
@@ -66,9 +69,9 @@ const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onC
             enum: ['noun', 'verb', 'adjective', 'adverb', 'preposition'],
           },
           vietnameseMeaning: { type: Type.STRING, description: "The Vietnamese translation." },
-          definition: { type: Type.STRING, description: "A clear and concise definition in English." },
+          definition: { type: Type.STRING, description: "A clear and concise definition in VIETNAMESE." },
           example: { type: Type.STRING, description: "An example sentence using the word." },
-          notes: { type: Type.STRING, description: "Optional notes about usage, context, or common mistakes." },
+          notes: { type: Type.STRING, description: "Optional notes about usage, context, or common mistakes, IN VIETNAMESE." },
           synonyms: {
             type: Type.ARRAY,
             description: "An array of related words or synonyms.",
@@ -76,7 +79,7 @@ const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onC
               type: Type.OBJECT,
               properties: {
                 word: { type: Type.STRING, description: "The synonym itself." },
-                comparison: { type: Type.STRING, description: "A detailed comparison with the main word, explaining the nuanced differences in meaning or usage." }
+                comparison: { type: Type.STRING, description: "A detailed comparison with the main word, explaining the nuanced differences in meaning or usage, IN VIETNAMESE." }
               },
               required: ['word', 'comparison']
             }

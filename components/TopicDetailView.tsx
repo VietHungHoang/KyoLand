@@ -61,11 +61,11 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                 <div>
-                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-1">Vietnamese</h4>
+                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-1">Nghĩa tiếng Việt</h4>
                   <p className="text-lg text-onSurface">{word.vietnameseMeaning}</p>
                 </div>
                  <div>
-                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-1">Definition</h4>
+                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-1">Định nghĩa</h4>
                   <p className="text-lg text-onSurface">{word.definition}</p>
                 </div>
               </div>
@@ -77,14 +77,14 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
 
               {word.notes && (
                 <div className="mt-4 border-t border-stroke pt-4">
-                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-1">Notes</h4>
+                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-1">Ghi chú</h4>
                   <p className="text-lg text-onSurface">{word.notes}</p>
                 </div>
               )}
 
               {word.synonyms && word.synonyms.length > 0 && (
                 <div className="mt-4 border-t border-stroke pt-4">
-                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-2">Synonyms & Related Words</h4>
+                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-2">Từ đồng nghĩa & Liên quan</h4>
                   <div className="flex flex-wrap gap-2">
                     {word.synonyms.map((synonym) => (
                       <button 
@@ -107,7 +107,7 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
                  <div className="mt-4 bg-primary/5 border-l-4 border-primary/50 p-4 rounded-r-lg">
                     <div className="flex justify-between items-center mb-2">
                         <h5 className="font-bold text-lg text-primary">
-                            Comparing: <span className="font-mono text-primary-dark">{word.word}</span> vs <span className="font-mono text-primary-dark">{comparingSynonym.word}</span>
+                            So sánh: <span className="font-mono text-primary-dark">{word.word}</span> vs <span className="font-mono text-primary-dark">{comparingSynonym.word}</span>
                         </h5>
                         <button onClick={() => setComparingSynonym(null)} className="p-1 rounded-full hover:bg-primary/10">
                             <XIcon className="w-4 h-4 text-primary"/>

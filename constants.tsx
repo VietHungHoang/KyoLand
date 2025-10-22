@@ -28,12 +28,12 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
             phonetic: '/ˌdes.təˈneɪ.ʃən/',
             partOfSpeech: 'noun',
             vietnameseMeaning: 'Điểm đến',
-            definition: 'The place to which someone or something is going or being sent.',
+            definition: 'Nơi mà một người hoặc một vật gì đó đang đi hoặc được gửi đến.',
             example: 'Our final destination is the sunny beaches of Hawaii.',
             synonyms: [
-              { word: 'goal', comparison: "'Destination' refers specifically to a physical place you travel to, while 'goal' is a broader term for an aim or desired result, which may not be a location." },
-              { word: 'target', comparison: "'Target' often implies an objective to be reached or achieved, which can be a location but is more commonly used for abstract goals or in contexts like sales or military operations. 'Destination' is purely for travel." },
-              { word: 'end-point', comparison: "'End-point' is a more technical or formal term for the final point in a journey or process. 'Destination' is more common in everyday travel language." }
+              { word: 'goal', comparison: "'Destination' chỉ một địa điểm vật lý cụ thể bạn đi tới, trong khi 'goal' là một thuật ngữ rộng hơn cho một mục đích hoặc kết quả mong muốn, không nhất thiết phải là một địa điểm." },
+              { word: 'target', comparison: "'Target' thường ngụ ý một mục tiêu cần đạt được, có thể là một địa điểm nhưng thường được sử dụng cho các mục tiêu trừu tượng hoặc trong các bối cảnh như bán hàng hoặc quân sự. 'Destination' chỉ dùng cho du lịch." },
+              { word: 'end-point', comparison: "'End-point' là một thuật ngữ kỹ thuật hoặc trang trọng hơn cho điểm cuối cùng của một cuộc hành trình hoặc một quá trình. 'Destination' phổ biến hơn trong ngôn ngữ du lịch hàng ngày." }
             ]
           },
           {
@@ -42,9 +42,9 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
             phonetic: '/aɪˈtɪn.ə.rer.i/',
             partOfSpeech: 'noun',
             vietnameseMeaning: 'Lịch trình',
-            definition: 'A planned route or journey.',
+            definition: 'Một tuyến đường hoặc hành trình đã được lên kế hoạch.',
             example: 'The travel agent prepared a detailed itinerary for our trip to Italy.',
-            notes: "Often confused with 'schedule'. An itinerary is a detailed plan for a journey, including the route and places to be visited."
+            notes: "Thường bị nhầm lẫn với 'schedule' (lịch trình, thời gian biểu). 'Itinerary' là một kế hoạch chi tiết cho một chuyến đi, bao gồm cả tuyến đường và những nơi sẽ đến thăm."
           },
           {
             id: 'word-3',
@@ -52,11 +52,11 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
             phonetic: '/ɪkˈsplɔːr/',
             partOfSpeech: 'verb',
             vietnameseMeaning: 'Khám phá',
-            definition: 'Travel through (an unfamiliar area) in order to learn about it.',
+            definition: 'Đi qua (một khu vực xa lạ) để tìm hiểu về nó.',
             example: 'We decided to explore the ancient ruins on our own.',
             synonyms: [
-              { word: 'discover', comparison: "'Explore' is the action of traveling and searching an area, while 'discover' is the result of finding something new or unexpected during that exploration." },
-              { word: 'investigate', comparison: "'Investigate' implies a more formal and systematic examination to find facts, often related to a problem or crime. 'Explore' is more about general learning and experience." }
+              { word: 'discover', comparison: "'Explore' là hành động đi lại và tìm kiếm trong một khu vực, trong khi 'discover' là kết quả của việc tìm thấy một điều gì đó mới hoặc bất ngờ trong quá trình khám phá đó." },
+              { word: 'investigate', comparison: "'Investigate' ngụ ý một cuộc kiểm tra chính thức và có hệ thống hơn để tìm ra sự thật, thường liên quan đến một vấn đề hoặc tội phạm. 'Explore' mang tính chất học hỏi và trải nghiệm chung chung hơn." }
             ]
           }
         ]
