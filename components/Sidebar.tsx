@@ -1,6 +1,6 @@
 import React from 'react';
 import type { SidebarSection } from '../types';
-import { LogoIcon, SettingsIcon } from './icons/Icons';
+import { LogoIcon, SettingsIcon, Icon } from './icons/Icons';
 
 interface SidebarProps {
   sections: SidebarSection[];
@@ -10,6 +10,13 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ sections, selectedSection, onSelectSection, onOpenSettingsModal }) => {
+  
+  const getSectionIconName = (section: SidebarSection): string => {
+    if (section.title === 'Vocabulary') return 'BookOpenIcon';
+    if (section.topics.length > 0 && section.topics[0].icon) return section.topics[0].icon;
+    return 'BookOpenIcon';
+  };
+
   return (
     <aside className="w-64 bg-surface border-r border-stroke flex flex-col flex-shrink-0">
       <div className="h-16 flex items-center px-6 border-b border-stroke">
@@ -27,7 +34,9 @@ const Sidebar: React.FC<SidebarProps> = ({ sections, selectedSection, onSelectSe
                     : 'text-onSurfaceSecondary hover:bg-gray-100 hover:text-onSurface'
                 }`}
               >
-              <span className="mr-3">{section.topics[0].icon}</span>
+              <span className="mr-3">
+                <Icon name={getSectionIconName(section)} className="w-5 h-5"/>
+              </span>
               {section.title}
             </button>
           </div>

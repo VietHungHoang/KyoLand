@@ -15,13 +15,13 @@ export interface VocabularyWord {
   example: string;
   notes?: string;
   synonyms?: Synonym[];
+  analysis?: string;
 }
 
 export interface Topic {
   id: string;
   name:string;
-  // FIX: Made icon type more specific to allow cloning with a className prop.
-  icon: React.ReactElement<{ className?: string }>;
+  icon: string;
   wordCount?: number;
   createdAt?: string;
   words?: VocabularyWord[];

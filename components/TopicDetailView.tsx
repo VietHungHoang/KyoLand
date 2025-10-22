@@ -30,14 +30,14 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
         </h1>
         <div className="flex items-center space-x-4">
           <button 
-            onClick={() => alert('AI modal will be opened here!')}
+            onClick={onOpenAddWordManuallyModal}
             className="flex items-center justify-center bg-secondary text-onPrimary px-4 py-2 rounded-lg text-base font-semibold hover:opacity-90 transition-opacity duration-200"
           >
             <SparklesIcon className="w-5 h-5 mr-2" />
             Add with AI
           </button>
           <button 
-            onClick={onOpenAddWordManuallyModal}
+            onClick={() => alert('This feature is not yet implemented.')}
             className="flex items-center justify-center bg-primary text-onPrimary px-4 py-2 rounded-lg text-base font-semibold hover:bg-primary-dark transition-colors duration-200"
           >
             <PlusIcon className="w-5 h-5 mr-2" />
@@ -82,6 +82,13 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
                 </div>
               )}
 
+              {word.analysis && (
+                <div className="mt-4 border-t border-stroke pt-4">
+                  <h4 className="text-base font-semibold text-onSurfaceSecondary mb-1">Phân tích từ ghép</h4>
+                  <p className="text-lg text-onSurface">{word.analysis}</p>
+                </div>
+              )}
+
               {word.synonyms && word.synonyms.length > 0 && (
                 <div className="mt-4 border-t border-stroke pt-4">
                   <h4 className="text-base font-semibold text-onSurfaceSecondary mb-2">Từ đồng nghĩa & Liên quan</h4>
@@ -122,7 +129,7 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
         ) : (
           <div className="text-center py-12 bg-surface border border-dashed border-stroke rounded-lg">
             <h3 className="text-2xl font-semibold text-onSurface">No words yet!</h3>
-            <p className="text-lg text-onSurfaceSecondary mt-2">Click "Add Manually" to start building your word list for this topic.</p>
+            <p className="text-lg text-onSurfaceSecondary mt-2">Click "Add with AI" to start building your word list for this topic.</p>
           </div>
         )}
       </div>

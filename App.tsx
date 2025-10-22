@@ -6,12 +6,23 @@ import CreateTopicModal from './components/CreateTopicModal';
 import AddWordManuallyModal from './components/AddWordManuallyModal';
 import SettingsModal from './components/SettingsModal';
 import TopicDetailView from './components/TopicDetailView';
-import { SIDEBAR_SECTIONS } from './constants';
-import type { Topic, VocabularyWord } from './types';
-import { BookOpenIcon, ChatBubbleIcon } from './components/icons/Icons';
+import { SIDEBAR_SECTIONS_INITIAL } from './constants';
+import type { Topic, VocabularyWord, SidebarSection } from './types';
+import { BookOpenIcon, Icon } from './components/icons/Icons';
 
 const App: React.FC = () => {
-  const [sidebarSections, setSidebarSections] = useState(SIDEBAR_SECTIONS);
+  const [sidebarSections, setSidebarSections] = useState<SidebarSection[]>(() => {
+    try {
+      const storedData = localStorage.getItem('lingosphere-data');
+      if (storedData) {
+        return JSON.parse(storedData);
+      }
+    } catch (error) {
+      console.error("Could not parse sidebar sections from localStorage", error);
+    }
+    return SIDEBAR_SECTIONS_INITIAL;
+  });
+  
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
   const [isAddWordManuallyModalOpen, setIsAddWordManuallyModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -26,6 +37,14 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('lingosphere-data', JSON.stringify(sidebarSections));
+    } catch (error) {
+      console.error("Could not save sidebar sections to localStorage", error);
+    }
+  }, [sidebarSections]);
+
   const allTopics = sidebarSections.flatMap(section => section.topics);
   const vocabularyTopics = sidebarSections.find(section => section.title === 'Vocabulary')?.topics || [];
   const activeTopic = allTopics.find(t => t.id === activeTopicId);
@@ -34,7 +53,7 @@ const App: React.FC = () => {
     const newTopic: Topic = {
       id: topicName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
       name: topicName,
-      icon: <ChatBubbleIcon className="w-5 h-5" />,
+      icon: 'ChatBubbleIcon',
       wordCount: 0,
       createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       words: [],
@@ -134,7 +153,7 @@ const App: React.FC = () => {
       const activeTopic = allTopics.find(t => t.id === activeTopicId);
       return {
         title: activeTopic?.name || 'Topic',
-        icon: activeTopic?.icon || <BookOpenIcon className="w-5 h-5"/>,
+        icon: <Icon name={activeTopic?.icon || 'BookOpenIcon'} className="w-5 h-5"/>,
         showBackButton: true,
         onBack: () => setActiveTopicId(null),
       }

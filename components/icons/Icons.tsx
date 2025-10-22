@@ -123,3 +123,35 @@ export const SettingsIcon: React.FC<IconProps> = (props) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
   </svg>
 );
+
+export const iconMap: { [key: string]: React.FC<IconProps> } = {
+    LogoIcon,
+    PlaneIcon,
+    FoodIcon,
+    BriefcaseIcon,
+    ChatBubbleIcon,
+    HomeIcon,
+    ShoppingCartIcon,
+    BellIcon,
+    SearchIcon,
+    ClockIcon,
+    BookOpenIcon,
+    PlusIcon,
+    DocumentTextIcon,
+    CalendarDaysIcon,
+    XIcon,
+    TrashIcon,
+    ChevronLeftIcon,
+    VolumeUpIcon,
+    SparklesIcon,
+    SettingsIcon
+};
+
+export const Icon: React.FC<{ name: string } & IconProps> = ({ name, ...props }) => {
+  const IconComponent = iconMap[name];
+  if (!IconComponent) {
+    const DefaultIcon = BookOpenIcon;
+    return <DefaultIcon {...props} />;
+  }
+  return <IconComponent {...props} />;
+};

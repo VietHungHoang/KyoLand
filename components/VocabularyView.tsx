@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Topic } from '../types';
-import { PlusIcon, DocumentTextIcon, CalendarDaysIcon, TrashIcon } from './icons/Icons';
+import { PlusIcon, DocumentTextIcon, CalendarDaysIcon, TrashIcon, Icon } from './icons/Icons';
 
 interface VocabularyViewProps {
   topics: Topic[];
@@ -46,7 +46,7 @@ const VocabularyView: React.FC<VocabularyViewProps> = ({ topics, onOpenCreateTop
               <TrashIcon className="w-5 h-5" />
             </button>
             <div className="p-4 bg-primary/10 text-primary rounded-full mb-4 mx-auto">
-              {React.cloneElement(topic.icon, { className: 'w-8 h-8' })}
+              <Icon name={topic.icon} className="w-8 h-8" />
             </div>
             <h3 className="text-2xl font-semibold text-onSurface">{topic.name}</h3>
             <p className="text-lg text-onSurfaceSecondary mt-1 flex-grow">

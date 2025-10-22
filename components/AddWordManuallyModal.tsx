@@ -46,9 +46,10 @@ const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onC
         1.  **Preserve User Input:** If the user provides specific information (like a definition, an example, or a Vietnamese meaning), you MUST use that exact information in the final JSON output. DO NOT modify or replace it.
         2.  **Complete Missing Information:** For any fields that are missing from the user's input, you must generate the correct information.
         3.  **Language Requirements:**
-            *   The \`definition\`, \`notes\`, and the \`comparison\` field within each synonym object MUST be in **Vietnamese**.
+            *   The \`definition\`, \`notes\`, \`analysis\`, and the \`comparison\` field within each synonym object MUST be in **Vietnamese**.
             *   All other fields like \`word\`, \`phonetic\`, \`example\` must be in English or their respective standard formats (e.g., IPA).
-        4.  **Strict JSON Output:** The final output must be a single, valid JSON object that conforms to the specified schema. Do not include any text, markdown, or explanations outside of the JSON block.
+        4.  **Compound Word Analysis:** If the word is a compound word (e.g., 'endpoint', 'seafood'), you MUST generate an 'analysis' field. This field should contain a short explanation of the meaning of each individual word, and then explain the idea behind the combination. This analysis must be in VIETNAMESE. For non-compound words, omit this field.
+        5.  **Strict JSON Output:** The final output must be a single, valid JSON object that conforms to the specified schema. Do not include any text, markdown, or explanations outside of the JSON block.
 
         Here is the user's input for a word in the topic "${topicName}":
         ---
@@ -72,6 +73,7 @@ const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onC
           definition: { type: Type.STRING, description: "A clear and concise definition in VIETNAMESE." },
           example: { type: Type.STRING, description: "An example sentence using the word." },
           notes: { type: Type.STRING, description: "Optional notes about usage, context, or common mistakes, IN VIETNAMESE." },
+          analysis: { type: Type.STRING, description: "If the word is a compound word, provide an analysis in VIETNAMESE breaking down its parts. Otherwise, this field should be omitted." },
           synonyms: {
             type: Type.ARRAY,
             description: "An array of related words or synonyms.",
