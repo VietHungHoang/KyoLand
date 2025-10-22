@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import VocabularyView from './components/VocabularyView';
 import CreateTopicModal from './components/CreateTopicModal';
 import AddWordManuallyModal from './components/AddWordManuallyModal';
+import SettingsModal from './components/SettingsModal';
 import TopicDetailView from './components/TopicDetailView';
 import { SIDEBAR_SECTIONS } from './constants';
 import type { Topic, VocabularyWord } from './types';
@@ -13,8 +14,17 @@ const App: React.FC = () => {
   const [sidebarSections, setSidebarSections] = useState(SIDEBAR_SECTIONS);
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
   const [isAddWordManuallyModalOpen, setIsAddWordManuallyModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState('Vocabulary');
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState('');
+
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem('gemini-api-key');
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+    }
+  }, []);
 
   const allTopics = sidebarSections.flatMap(section => section.topics);
   const vocabularyTopics = sidebarSections.find(section => section.title === 'Vocabulary')?.topics || [];
@@ -61,6 +71,12 @@ const App: React.FC = () => {
     );
   };
   
+  const handleSaveApiKey = (newApiKey: string) => {
+    setApiKey(newApiKey);
+    localStorage.setItem('gemini-api-key', newApiKey);
+    setIsSettingsModalOpen(false);
+  };
+
   const handleAddWord = (topicId: string, newWord: VocabularyWord) => {
     setSidebarSections(currentSections =>
       currentSections.map(section => {
@@ -136,6 +152,7 @@ const App: React.FC = () => {
         sections={sidebarSections}
         selectedSection={selectedSection}
         onSelectSection={setSelectedSection}
+        onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header {...getHeaderProps()} />
@@ -154,8 +171,15 @@ const App: React.FC = () => {
           onClose={() => setIsAddWordManuallyModalOpen(false)}
           onAddWord={(newWord) => handleAddWord(activeTopic.id, newWord)}
           topicName={activeTopic.name}
+          apiKey={apiKey}
         />
       )}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onSave={handleSaveApiKey}
+        currentApiKey={apiKey}
+      />
     </div>
   );
 };

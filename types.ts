@@ -20,8 +20,8 @@ export interface VocabularyWord {
 export interface Topic {
   id: string;
   name:string;
-  // FIX: Changed type from React.ReactNode to React.ReactElement for better type safety with React.cloneElement.
-  icon: React.ReactElement;
+  // FIX: Made icon type more specific to allow cloning with a className prop.
+  icon: React.ReactElement<{ className?: string }>;
   wordCount?: number;
   createdAt?: string;
   words?: VocabularyWord[];

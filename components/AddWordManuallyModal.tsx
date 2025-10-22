@@ -7,10 +7,11 @@ interface AddWordManuallyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddWord: (word: VocabularyWord) => void;
+  apiKey: string;
   topicName: string;
 }
 
-const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onClose, onAddWord, topicName }) => {
+const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onClose, onAddWord, apiKey, topicName }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,20 +22,22 @@ const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (!apiKey) {
+      setError("API Key not found. Please add your Gemini API key in the settings (bottom left corner).");
+      return;
+    }
+
     if (!userInput.trim()) {
       setError("Please enter some information about the word.");
       return;
     }
 
     setIsLoading(true);
-    setError(null);
 
     try {
-      if (!process.env.API_KEY) {
-        throw new Error("API key is not configured. Please contact support.");
-      }
-
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: apiKey });
 
       const prompt = `
         You are an expert English-Vietnamese lexicographer. Your task is to take a user's raw text input and transform it into a complete, structured vocabulary entry in JSON format.
@@ -103,7 +106,7 @@ const AddWordManuallyModal: React.FC<AddWordManuallyModalProps> = ({ isOpen, onC
 
     } catch (err) {
       console.error("Error generating word with AI:", err);
-      setError("Failed to generate word. The AI might be unavailable, or the provided text was too ambiguous. Please try again.");
+      setError("Failed to generate word. The AI might be unavailable, or the provided text was too ambiguous. Please check your API key and try again.");
     } finally {
       setIsLoading(false);
     }
