@@ -6,11 +6,15 @@ import CreateTopicModal from './components/CreateTopicModal';
 import AddWordManuallyModal from './components/AddWordManuallyModal';
 import SettingsModal from './components/SettingsModal';
 import TopicDetailView from './components/TopicDetailView';
+import DictationView from './components/DictationView';
+import CreateDictationTopicModal from './components/CreateDictationTopicModal';
+import DictationTopicDetailView from './components/DictationTopicDetailView';
 import { SIDEBAR_SECTIONS_INITIAL } from './constants';
-import type { Topic, VocabularyWord, SidebarSection } from './types';
-import { BookOpenIcon, Icon } from './components/icons/Icons';
+import type { Topic, VocabularyWord, SidebarSection, DictationTopic } from './types';
+import { BookOpenIcon, Icon, MicrophoneIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
+  // Vocabulary State
   const [sidebarSections, setSidebarSections] = useState<SidebarSection[]>(() => {
     try {
       const storedData = localStorage.getItem('lingosphere-data');
@@ -20,10 +24,24 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Could not parse sidebar sections from localStorage", error);
     }
-    return SIDEBAR_SECTIONS_INITIAL;
+    return SIDEBAR_SECTIONS_INITIAL.filter(s => s.title !== 'Dictation');
   });
   
+  // Dictation State
+  const [dictationTopics, setDictationTopics] = useState<DictationTopic[]>(() => {
+    try {
+      const storedData = localStorage.getItem('lingosphere-dictation-topics');
+      if (storedData) {
+        return JSON.parse(storedData);
+      }
+    } catch (error) {
+      console.error("Could not parse dictation topics from localStorage", error);
+    }
+    return [];
+  });
+
   const [isCreateTopicModalOpen, setIsCreateTopicModalOpen] = useState(false);
+  const [isCreateDictationModalOpen, setIsCreateDictationModalOpen] = useState(false);
   const [isAddWordManuallyModalOpen, setIsAddWordManuallyModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState('Vocabulary');
@@ -37,6 +55,7 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Persist Vocabulary Data
   useEffect(() => {
     try {
       localStorage.setItem('lingosphere-data', JSON.stringify(sidebarSections));
@@ -44,10 +63,22 @@ const App: React.FC = () => {
       console.error("Could not save sidebar sections to localStorage", error);
     }
   }, [sidebarSections]);
+  
+  // Persist Dictation Data
+  useEffect(() => {
+    try {
+      localStorage.setItem('lingosphere-dictation-topics', JSON.stringify(dictationTopics));
+    } catch (error) {
+      console.error("Could not save dictation topics to localStorage", error);
+    }
+  }, [dictationTopics]);
 
-  const allTopics = sidebarSections.flatMap(section => section.topics);
+
+  const allVocabTopics = sidebarSections.flatMap(section => section.topics);
   const vocabularyTopics = sidebarSections.find(section => section.title === 'Vocabulary')?.topics || [];
-  const activeTopic = allTopics.find(t => t.id === activeTopicId);
+  
+  const activeVocabTopic = allVocabTopics.find(t => t.id === activeTopicId);
+  const activeDictationTopic = dictationTopics.find(t => t.id === activeTopicId);
 
   const handleCreateTopic = (topicName: string) => {
     const newTopic: Topic = {
@@ -72,6 +103,17 @@ const App: React.FC = () => {
     );
     setIsCreateTopicModalOpen(false);
   };
+  
+  const handleCreateDictationTopic = (topicData: Omit<DictationTopic, 'id' | 'createdAt' | 'icon'>) => {
+    const newTopic: DictationTopic = {
+      ...topicData,
+      id: topicData.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+      icon: 'MicrophoneIcon',
+      createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    };
+    setDictationTopics(current => [...current, newTopic]);
+    setIsCreateDictationModalOpen(false);
+  };
 
   const handleDeleteTopic = (topicIdToDelete: string) => {
     if (!window.confirm("Are you sure you want to delete this topic? This action cannot be undone.")) {
@@ -87,6 +129,15 @@ const App: React.FC = () => {
         ...section,
         topics: section.topics.filter(topic => topic.id !== topicIdToDelete),
       }))
+    );
+    setDictationTopics(current => current.filter(topic => topic.id !== topicIdToDelete));
+  };
+  
+  const handleUpdateDictationTopic = (updatedTopic: DictationTopic) => {
+    setDictationTopics(currentTopics => 
+        currentTopics.map(topic => 
+            topic.id === updatedTopic.id ? updatedTopic : topic
+        )
     );
   };
   
@@ -104,7 +155,7 @@ const App: React.FC = () => {
             ...section,
             topics: section.topics.map(topic => {
               if (topic.id === topicId) {
-                const updatedWords = [...(topic.words || []), newWord];
+                const updatedWords = [newWord, ...(topic.words || [])];
                 return {
                   ...topic,
                   words: updatedWords,
@@ -120,14 +171,27 @@ const App: React.FC = () => {
     );
     setIsAddWordManuallyModalOpen(false);
   };
+  
+  // Combine all sections for sidebar display
+  const displayedSidebarSections = SIDEBAR_SECTIONS_INITIAL.map(s => {
+    if (s.title === 'Vocabulary') return { title: 'Vocabulary', topics: [] }; // The topics themselves are not rendered in sidebar
+    if (s.title === 'Dictation') return { title: 'Dictation', topics: [{ id: 'dict', name: 'Dictation', icon: 'MicrophoneIcon' }] };
+    return s;
+  });
 
   const renderContent = () => {
     if (selectedSection === 'Vocabulary') {
-      const activeTopic = vocabularyTopics.find(t => t.id === activeTopicId);
-      if (activeTopic) {
-        return <TopicDetailView topic={activeTopic} onOpenAddWordManuallyModal={() => setIsAddWordManuallyModalOpen(true)} />;
+      if (activeVocabTopic) {
+        return <TopicDetailView topic={activeVocabTopic} onOpenAddWordManuallyModal={() => setIsAddWordManuallyModalOpen(true)} />;
       }
       return <VocabularyView topics={vocabularyTopics} onOpenCreateTopicModal={() => setIsCreateTopicModalOpen(true)} onDeleteTopic={handleDeleteTopic} onSelectTopic={setActiveTopicId} />;
+    }
+    
+    if (selectedSection === 'Dictation') {
+      if (activeDictationTopic) {
+        return <DictationTopicDetailView topic={activeDictationTopic} onUpdateTopic={handleUpdateDictationTopic} apiKey={apiKey} />;
+      }
+      return <DictationView topics={dictationTopics} onOpenCreateTopicModal={() => setIsCreateDictationModalOpen(true)} onDeleteTopic={handleDeleteTopic} onSelectTopic={setActiveTopicId} />;
     }
     
     if (selectedSection === 'Grammar') {
@@ -150,12 +214,19 @@ const App: React.FC = () => {
   
   const getHeaderProps = () => {
     if (activeTopicId) {
-      const activeTopic = allTopics.find(t => t.id === activeTopicId);
+      const activeTopic = activeVocabTopic || activeDictationTopic;
       return {
         title: activeTopic?.name || 'Topic',
         icon: <Icon name={activeTopic?.icon || 'BookOpenIcon'} className="w-5 h-5"/>,
         showBackButton: true,
         onBack: () => setActiveTopicId(null),
+      }
+    }
+     if (selectedSection === 'Dictation') {
+      return {
+        title: 'Dictation',
+        icon: <MicrophoneIcon className="w-5 h-5" />,
+        showBackButton: false,
       }
     }
     return {
@@ -168,9 +239,12 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen bg-background text-onSurface font-sans">
       <Sidebar
-        sections={sidebarSections}
+        sections={displayedSidebarSections}
         selectedSection={selectedSection}
-        onSelectSection={setSelectedSection}
+        onSelectSection={(section) => {
+          setActiveTopicId(null);
+          setSelectedSection(section);
+        }}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -184,12 +258,17 @@ const App: React.FC = () => {
         onClose={() => setIsCreateTopicModalOpen(false)}
         onCreate={handleCreateTopic}
       />
-      {activeTopic && (
+       <CreateDictationTopicModal
+        isOpen={isCreateDictationModalOpen}
+        onClose={() => setIsCreateDictationModalOpen(false)}
+        onCreate={handleCreateDictationTopic}
+      />
+      {activeVocabTopic && (
         <AddWordManuallyModal
           isOpen={isAddWordManuallyModalOpen}
           onClose={() => setIsAddWordManuallyModalOpen(false)}
-          onAddWord={(newWord) => handleAddWord(activeTopic.id, newWord)}
-          topicName={activeTopic.name}
+          onAddWord={(newWord) => handleAddWord(activeVocabTopic.id, newWord)}
+          topicName={activeVocabTopic.name}
           apiKey={apiKey}
         />
       )}

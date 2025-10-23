@@ -7,6 +7,10 @@ export const SIDEBAR_SECTIONS_INITIAL: SidebarSection[] = [
     topics: []
   },
   {
+    title: 'Dictation',
+    topics: [],
+  },
+  {
     title: 'Grammar',
     topics: [
       {

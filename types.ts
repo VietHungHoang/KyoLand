@@ -27,7 +27,21 @@ export interface Topic {
   words?: VocabularyWord[];
 }
 
+export interface DictationTopic {
+  id: string;
+  name: string;
+  icon: string;
+  createdAt: string;
+  audioFileName: string;
+  audioFileSize: number;
+  audioFileType: string;
+  audioDataUrl?: string; 
+  transcription?: string;
+  status: 'new' | 'transcribing' | 'done' | 'error';
+  errorMessage?: string;
+}
+
 export interface SidebarSection {
   title: string;
-  topics: Topic[];
+  topics: any[]; // Allow for different topic types, like Topic and static objects
 }
