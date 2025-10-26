@@ -8,7 +8,6 @@ interface TopicDetailViewProps {
 }
 
 const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordManuallyModal }) => {
-  const words = topic.words || [];
   const [comparingSynonym, setComparingSynonym] = useState<Synonym | null>(null);
   const [activeWordId, setActiveWordId] = useState<string | null>(null);
 
@@ -21,6 +20,18 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
       setActiveWordId(wordId);
     }
   };
+
+  const getTimestampFromId = (id: string): number => {
+    const parts = id.split('-');
+    const timestamp = parseInt(parts[parts.length - 1], 10);
+    return isNaN(timestamp) ? 0 : timestamp;
+  };
+
+  // Sort words from newest to oldest based on timestamp in ID
+  const words = (topic.words || []).slice().sort((a, b) => {
+    return getTimestampFromId(b.id) - getTimestampFromId(a.id);
+  });
+
 
   return (
     <div>
