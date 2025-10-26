@@ -47,6 +47,8 @@ const App: React.FC = () => {
   const [selectedSection, setSelectedSection] = useState('Vocabulary');
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
 
   useEffect(() => {
     const storedApiKey = localStorage.getItem('gemini-api-key');
@@ -246,6 +248,8 @@ const App: React.FC = () => {
           setSelectedSection(section);
         }}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setIsSidebarCollapsed(prev => !prev)}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header {...getHeaderProps()} />
