@@ -7,6 +7,10 @@ export const SIDEBAR_SECTIONS_INITIAL: SidebarSection[] = [
     topics: []
   },
   {
+    title: 'Vocabulary-API',
+    topics: [],
+  },
+  {
     title: 'Dictation',
     topics: [],
   },

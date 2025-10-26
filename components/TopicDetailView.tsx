@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Topic, Synonym } from '../types';
 import { PlusIcon, VolumeUpIcon, SparklesIcon, XIcon } from './icons/Icons';
 
@@ -10,6 +10,33 @@ interface TopicDetailViewProps {
 const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordManuallyModal }) => {
   const [comparingSynonym, setComparingSynonym] = useState<Synonym | null>(null);
   const [activeWordId, setActiveWordId] = useState<string | null>(null);
+  const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
+  const [checkedWordsForAudio, setCheckedWordsForAudio] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchAudioForWord = async (word: string) => {
+      try {
+        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+        if (!response.ok) {
+          return; // Word not found or API error, so no audio.
+        }
+        const data = await response.json();
+        const audioUrl = data[0]?.phonetics?.find((p: any) => p.audio)?.audio;
+        if (audioUrl) {
+          setAudioUrls(prev => ({ ...prev, [word]: audioUrl }));
+        }
+      } catch (error) {
+        console.error(`Could not fetch audio for "${word}"`, error);
+      }
+    };
+
+    (topic.words || []).forEach(word => {
+      if (!checkedWordsForAudio.has(word.word)) {
+        setCheckedWordsForAudio(prev => new Set(prev).add(word.word));
+        fetchAudioForWord(word.word);
+      }
+    });
+  }, [topic.words, checkedWordsForAudio]);
 
   const handleSynonymClick = (wordId: string, synonym: Synonym) => {
     if (activeWordId === wordId && comparingSynonym?.word === synonym.word) {
@@ -31,6 +58,13 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
   const words = (topic.words || []).slice().sort((a, b) => {
     return getTimestampFromId(b.id) - getTimestampFromId(a.id);
   });
+  
+  const playAudio = (word: string) => {
+    const audioUrl = audioUrls[word];
+    if (audioUrl) {
+        new Audio(audioUrl).play();
+    }
+  }
 
 
   return (
@@ -63,9 +97,15 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
             <div key={word.id} className="bg-surface border border-stroke rounded-lg p-6">
               <div className="flex items-center mb-3">
                 <h2 className="text-3xl font-bold text-primary mr-3">{word.word}</h2>
-                <button className="text-onSurfaceSecondary hover:text-primary transition-colors">
-                  <VolumeUpIcon className="w-6 h-6" />
-                </button>
+                {audioUrls[word.word] && (
+                    <button 
+                        onClick={() => playAudio(word.word)}
+                        className="text-onSurfaceSecondary hover:text-primary transition-colors"
+                        title={`Listen to "${word.word}"`}
+                        >
+                        <VolumeUpIcon className="w-6 h-6" />
+                    </button>
+                )}
                 <span className="text-xl text-onSurfaceSecondary ml-4 italic">{word.phonetic}</span>
                 <span className="ml-auto text-base font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">{word.partOfSpeech}</span>
               </div>

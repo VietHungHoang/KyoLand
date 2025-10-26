@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import VocabularyView from './components/VocabularyView';
+import VocabularyApiView from './components/VocabularyApiView';
 import CreateTopicModal from './components/CreateTopicModal';
 import AddWordManuallyModal from './components/AddWordManuallyModal';
 import SettingsModal from './components/SettingsModal';
@@ -11,7 +12,7 @@ import CreateDictationTopicModal from './components/CreateDictationTopicModal';
 import DictationTopicDetailView from './components/DictationTopicDetailView';
 import { SIDEBAR_SECTIONS_INITIAL } from './constants';
 import type { Topic, VocabularyWord, SidebarSection, DictationTopic } from './types';
-import { BookOpenIcon, Icon, MicrophoneIcon } from './components/icons/Icons';
+import { BookOpenIcon, Icon, MicrophoneIcon, WifiIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
   // Vocabulary State
@@ -24,7 +25,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Could not parse sidebar sections from localStorage", error);
     }
-    return SIDEBAR_SECTIONS_INITIAL.filter(s => s.title !== 'Dictation');
+    return SIDEBAR_SECTIONS_INITIAL.filter(s => s.title !== 'Dictation' && s.title !== 'Vocabulary-API');
   });
   
   // Dictation State
@@ -177,6 +178,7 @@ const App: React.FC = () => {
   // Combine all sections for sidebar display
   const displayedSidebarSections = SIDEBAR_SECTIONS_INITIAL.map(s => {
     if (s.title === 'Vocabulary') return { title: 'Vocabulary', topics: [] }; // The topics themselves are not rendered in sidebar
+    if (s.title === 'Vocabulary-API') return { title: 'Vocabulary-API', topics: [{ id: 'vocab-api', name: 'Vocabulary API', icon: 'WifiIcon' }] };
     if (s.title === 'Dictation') return { title: 'Dictation', topics: [{ id: 'dict', name: 'Dictation', icon: 'MicrophoneIcon' }] };
     return s;
   });
@@ -189,6 +191,10 @@ const App: React.FC = () => {
       return <VocabularyView topics={vocabularyTopics} onOpenCreateTopicModal={() => setIsCreateTopicModalOpen(true)} onDeleteTopic={handleDeleteTopic} onSelectTopic={setActiveTopicId} />;
     }
     
+    if (selectedSection === 'Vocabulary-API') {
+      return <VocabularyApiView />;
+    }
+
     if (selectedSection === 'Dictation') {
       if (activeDictationTopic) {
         return <DictationTopicDetailView topic={activeDictationTopic} onUpdateTopic={handleUpdateDictationTopic} apiKey={apiKey} />;
@@ -222,6 +228,14 @@ const App: React.FC = () => {
         icon: <Icon name={activeTopic?.icon || 'BookOpenIcon'} className="w-5 h-5"/>,
         showBackButton: true,
         onBack: () => setActiveTopicId(null),
+      }
+    }
+    
+    if (selectedSection === 'Vocabulary-API') {
+      return {
+        title: 'Vocabulary API',
+        icon: <WifiIcon className="w-5 h-5" />,
+        showBackButton: false,
       }
     }
      if (selectedSection === 'Dictation') {

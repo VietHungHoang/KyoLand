@@ -142,6 +142,13 @@ export const ChevronDoubleRightIcon: React.FC<IconProps> = (props) => (
     </svg>
 );
 
+export const WifiIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856a9.75 9.75 0 0113.788 0M1.924 8.674a14.25 14.25 0 0119.152 0M12 20.25h.008v.008H12v-.008z" />
+  </svg>
+);
+
+
 export const iconMap: { [key: string]: React.FC<IconProps> } = {
     LogoIcon,
     PlaneIcon,
@@ -166,6 +173,7 @@ export const iconMap: { [key: string]: React.FC<IconProps> } = {
     MicrophoneIcon,
     ChevronDoubleLeftIcon,
     ChevronDoubleRightIcon,
+    WifiIcon,
 };
 
 export const Icon: React.FC<{ name: string } & IconProps> = ({ name, ...props }) => {

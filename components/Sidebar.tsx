@@ -15,6 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sections, selectedSection, onSelectSe
   
   const getSectionIconName = (section: SidebarSection): string => {
     if (section.title === 'Vocabulary') return 'BookOpenIcon';
+    if (section.title === 'Vocabulary-API') return 'WifiIcon';
     if (section.topics.length > 0 && section.topics[0].icon) return section.topics[0].icon;
     return 'BookOpenIcon';
   };
