@@ -246,7 +246,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     if (activeQuiz) {
-        return <QuizView quizData={activeQuiz} onFinishQuiz={handleFinishQuiz} onBack={() => setActiveQuiz(null)}/>
+        return <QuizView quizData={activeQuiz} onFinishQuiz={handleFinishQuiz} onBack={() => setActiveQuiz(null)} apiKey={apiKey}/>
     }
     
     if (practiceVocabTopic) {
