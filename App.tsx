@@ -10,9 +10,11 @@ import TopicDetailView from './components/TopicDetailView';
 import DictationView from './components/DictationView';
 import CreateDictationTopicModal from './components/CreateDictationTopicModal';
 import DictationTopicDetailView from './components/DictationTopicDetailView';
+import PracticeSetupView from './components/PracticeSetupView';
+import QuizView from './components/QuizView';
 import { SIDEBAR_SECTIONS_INITIAL } from './constants';
-import type { Topic, VocabularyWord, SidebarSection, DictationTopic } from './types';
-import { BookOpenIcon, Icon, MicrophoneIcon, WifiIcon } from './components/icons/Icons';
+import type { Topic, VocabularyWord, SidebarSection, DictationTopic, QuizQuestion } from './types';
+import { BookOpenIcon, Icon, MicrophoneIcon, WifiIcon, AcademicCapIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
   // Vocabulary State
@@ -20,12 +22,30 @@ const App: React.FC = () => {
     try {
       const storedData = localStorage.getItem('lingosphere-data');
       if (storedData) {
-        return JSON.parse(storedData);
+        const parsed = JSON.parse(storedData);
+        // Migration logic to ensure practiceCount exists
+        return parsed.map((section: SidebarSection) => ({
+          ...section,
+          topics: section.topics.map(topic => {
+            if (section.title === 'Vocabulary' && topic.words) {
+              return {
+                ...topic,
+                words: (topic.words || []).map((word: any) => ({
+                  ...word,
+                  practiceCount: word.practiceCount || 0,
+                })),
+              };
+            }
+            return topic;
+          }),
+        }));
       }
     } catch (error) {
       console.error("Could not parse sidebar sections from localStorage", error);
     }
-    return SIDEBAR_SECTIONS_INITIAL.filter(s => s.title !== 'Dictation' && s.title !== 'Vocabulary-API');
+    
+    // Return the default empty structure if no data is found in localStorage
+    return SIDEBAR_SECTIONS_INITIAL;
   });
   
   // Dictation State
@@ -49,6 +69,10 @@ const App: React.FC = () => {
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // Practice State
+  const [practiceTopicId, setPracticeTopicId] = useState<string | null>(null);
+  const [activeQuiz, setActiveQuiz] = useState<{ questions: QuizQuestion[]; words: VocabularyWord[] } | null>(null);
 
 
   useEffect(() => {
@@ -81,6 +105,7 @@ const App: React.FC = () => {
   const vocabularyTopics = sidebarSections.find(section => section.title === 'Vocabulary')?.topics || [];
   
   const activeVocabTopic = allVocabTopics.find(t => t.id === activeTopicId);
+  const practiceVocabTopic = allVocabTopics.find(t => t.id === practiceTopicId);
   const activeDictationTopic = dictationTopics.find(t => t.id === activeTopicId);
 
   const handleCreateTopic = (topicName: string) => {
@@ -123,9 +148,8 @@ const App: React.FC = () => {
       return;
     }
     
-    if (activeTopicId === topicIdToDelete) {
-      setActiveTopicId(null);
-    }
+    if (activeTopicId === topicIdToDelete) setActiveTopicId(null);
+    if (practiceTopicId === topicIdToDelete) setPracticeTopicId(null);
 
     setSidebarSections(currentSections =>
       currentSections.map(section => ({
@@ -174,6 +198,43 @@ const App: React.FC = () => {
     );
     setIsAddWordManuallyModalOpen(false);
   };
+
+  const handleStartPractice = (topicId: string) => {
+    setActiveTopicId(null);
+    setPracticeTopicId(topicId);
+  };
+
+  const handleStartQuiz = (quizData: { questions: QuizQuestion[], words: VocabularyWord[] }) => {
+    setPracticeTopicId(null);
+    setActiveQuiz(quizData);
+  };
+  
+  const handleFinishQuiz = (practicedWords: VocabularyWord[]) => {
+    const practicedWordIds = new Set(practicedWords.map(w => w.id));
+    setSidebarSections(currentSections =>
+      currentSections.map(section => ({
+        ...section,
+        topics: section.topics.map(topic => {
+          if (topic.words) {
+            return {
+              ...topic,
+              words: topic.words.map((word: VocabularyWord) => {
+                if (practicedWordIds.has(word.id)) {
+                  return {
+                    ...word,
+                    practiceCount: (word.practiceCount || 0) + 1,
+                  };
+                }
+                return word;
+              }),
+            };
+          }
+          return topic;
+        }),
+      }))
+    );
+    setActiveQuiz(null);
+  };
   
   // Combine all sections for sidebar display
   const displayedSidebarSections = SIDEBAR_SECTIONS_INITIAL.map(s => {
@@ -184,11 +245,19 @@ const App: React.FC = () => {
   });
 
   const renderContent = () => {
+    if (activeQuiz) {
+        return <QuizView quizData={activeQuiz} onFinishQuiz={handleFinishQuiz} onBack={() => setActiveQuiz(null)}/>
+    }
+    
+    if (practiceVocabTopic) {
+        return <PracticeSetupView topic={practiceVocabTopic} onStartQuiz={handleStartQuiz} onBack={() => setPracticeTopicId(null)} apiKey={apiKey}/>
+    }
+
     if (selectedSection === 'Vocabulary') {
       if (activeVocabTopic) {
-        return <TopicDetailView topic={activeVocabTopic} onOpenAddWordManuallyModal={() => setIsAddWordManuallyModalOpen(true)} />;
+        return <TopicDetailView topic={activeVocabTopic} onOpenAddWordManuallyModal={() => setIsAddWordManuallyModalOpen(true)} onStartPractice={handleStartPractice} />;
       }
-      return <VocabularyView topics={vocabularyTopics} onOpenCreateTopicModal={() => setIsCreateTopicModalOpen(true)} onDeleteTopic={handleDeleteTopic} onSelectTopic={setActiveTopicId} />;
+      return <VocabularyView topics={vocabularyTopics} onOpenCreateTopicModal={() => setIsCreateTopicModalOpen(true)} onDeleteTopic={handleDeleteTopic} onSelectTopic={setActiveTopicId} onStartPractice={handleStartPractice} />;
     }
     
     if (selectedSection === 'Vocabulary-API') {
@@ -221,6 +290,22 @@ const App: React.FC = () => {
   };
   
   const getHeaderProps = () => {
+    if (activeQuiz) {
+        return {
+            title: 'Practice Quiz',
+            icon: <AcademicCapIcon className="w-5 h-5"/>,
+            showBackButton: true,
+            onBack: () => setActiveQuiz(null),
+        }
+    }
+    if (practiceVocabTopic) {
+        return {
+            title: `Practice: ${practiceVocabTopic.name}`,
+            icon: <AcademicCapIcon className="w-5 h-5"/>,
+            showBackButton: true,
+            onBack: () => setPracticeTopicId(null),
+        }
+    }
     if (activeTopicId) {
       const activeTopic = activeVocabTopic || activeDictationTopic;
       return {
@@ -259,6 +344,8 @@ const App: React.FC = () => {
         selectedSection={selectedSection}
         onSelectSection={(section) => {
           setActiveTopicId(null);
+          setPracticeTopicId(null);
+          setActiveQuiz(null);
           setSelectedSection(section);
         }}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
@@ -285,7 +372,7 @@ const App: React.FC = () => {
         <AddWordManuallyModal
           isOpen={isAddWordManuallyModalOpen}
           onClose={() => setIsAddWordManuallyModalOpen(false)}
-          onAddWord={(newWord) => handleAddWord(activeVocabTopic.id, newWord)}
+          onAddWord={(newWord) => handleAddWord(activeVocabTopic.id, { ...newWord, practiceCount: 0 })}
           topicName={activeVocabTopic.name}
           apiKey={apiKey}
         />

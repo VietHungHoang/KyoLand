@@ -16,6 +16,7 @@ export interface VocabularyWord {
   notes?: string;
   synonyms?: Synonym[];
   analysis?: string;
+  practiceCount: number;
 }
 
 export interface Topic {
@@ -44,4 +45,10 @@ export interface DictationTopic {
 export interface SidebarSection {
   title: string;
   topics: any[]; // Allow for different topic types, like Topic and static objects
+}
+
+export interface QuizQuestion {
+  question: string;
+  options: string[];
+  answer: string;
 }

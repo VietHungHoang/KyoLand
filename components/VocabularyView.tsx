@@ -1,15 +1,16 @@
 import React from 'react';
 import type { Topic } from '../types';
-import { PlusIcon, DocumentTextIcon, CalendarDaysIcon, TrashIcon, Icon } from './icons/Icons';
+import { PlusIcon, DocumentTextIcon, CalendarDaysIcon, TrashIcon, Icon, AcademicCapIcon } from './icons/Icons';
 
 interface VocabularyViewProps {
   topics: Topic[];
   onOpenCreateTopicModal: () => void;
   onDeleteTopic: (topicId: string) => void;
   onSelectTopic: (topicId: string) => void;
+  onStartPractice: (topicId: string) => void;
 }
 
-const VocabularyView: React.FC<VocabularyViewProps> = ({ topics, onOpenCreateTopicModal, onDeleteTopic, onSelectTopic }) => {
+const VocabularyView: React.FC<VocabularyViewProps> = ({ topics, onOpenCreateTopicModal, onDeleteTopic, onSelectTopic, onStartPractice }) => {
 
   return (
     <div className="bg-surface rounded-xl shadow-sm border border-stroke p-8">
@@ -32,10 +33,9 @@ const VocabularyView: React.FC<VocabularyViewProps> = ({ topics, onOpenCreateTop
         {topics.map((topic) => (
           <div 
             key={topic.id}
-            onClick={() => onSelectTopic(topic.id)}
-            className="bg-background border border-stroke rounded-lg p-6 flex flex-col text-center hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer relative group"
+            className="bg-background border border-stroke rounded-lg p-6 flex flex-col text-center transition-all duration-200 relative group"
           >
-            <button
+             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteTopic(topic.id);
@@ -45,14 +45,31 @@ const VocabularyView: React.FC<VocabularyViewProps> = ({ topics, onOpenCreateTop
             >
               <TrashIcon className="w-5 h-5" />
             </button>
-            <div className="p-4 bg-primary/10 text-primary rounded-full mb-4 mx-auto">
-              <Icon name={topic.icon} className="w-8 h-8" />
+
+            <div 
+              onClick={() => onSelectTopic(topic.id)}
+              className="flex flex-col flex-grow cursor-pointer"
+            >
+              <div className="p-4 bg-primary/10 text-primary rounded-full mb-4 mx-auto">
+                <Icon name={topic.icon} className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-semibold text-onSurface">{topic.name}</h3>
             </div>
-            <h3 className="text-2xl font-semibold text-onSurface">{topic.name}</h3>
-            <p className="text-lg text-onSurfaceSecondary mt-1 flex-grow">
-              Learn words related to {topic.name.toLowerCase()}.
-            </p>
-            <div className="border-t border-stroke w-full mt-4 pt-4 flex justify-around text-base text-onSurfaceSecondary">
+            
+            <div className="flex-grow flex items-center justify-center my-4">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onStartPractice(topic.id);
+                    }}
+                    className="flex items-center justify-center bg-primary/10 text-primary px-6 py-2 rounded-lg text-base font-semibold hover:bg-primary/20 transition-colors duration-200"
+                >
+                    <AcademicCapIcon className="w-5 h-5 mr-2" />
+                    Practice
+                </button>
+            </div>
+
+            <div className="border-t border-stroke w-full pt-4 flex justify-around text-base text-onSurfaceSecondary">
               <div className="flex items-center">
                 <DocumentTextIcon className="w-4 h-4 mr-1.5" />
                 <span>{topic.wordCount} words</span>

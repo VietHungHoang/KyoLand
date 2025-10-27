@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import type { Topic, Synonym } from '../types';
-import { PlusIcon, VolumeUpIcon, SparklesIcon, XIcon } from './icons/Icons';
+import { PlusIcon, VolumeUpIcon, SparklesIcon, XIcon, AcademicCapIcon } from './icons/Icons';
 
 interface TopicDetailViewProps {
   topic: Topic;
   onOpenAddWordManuallyModal: () => void;
+  onStartPractice: (topicId: string) => void;
 }
 
-const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordManuallyModal }) => {
+const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordManuallyModal, onStartPractice }) => {
   const [comparingSynonym, setComparingSynonym] = useState<Synonym | null>(null);
   const [activeWordId, setActiveWordId] = useState<string | null>(null);
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
@@ -82,11 +83,11 @@ const TopicDetailView: React.FC<TopicDetailViewProps> = ({ topic, onOpenAddWordM
             Add with AI
           </button>
           <button 
-            onClick={() => alert('This feature is not yet implemented.')}
+            onClick={() => onStartPractice(topic.id)}
             className="flex items-center justify-center bg-primary text-onPrimary px-4 py-2 rounded-lg text-base font-semibold hover:bg-primary-dark transition-colors duration-200"
           >
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Add Manually
+            <AcademicCapIcon className="w-5 h-5 mr-2" />
+            Practice
           </button>
         </div>
       </div>
