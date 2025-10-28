@@ -15,6 +15,10 @@ export const SIDEBAR_SECTIONS_INITIAL: SidebarSection[] = [
     topics: [],
   },
   {
+    title: 'Toeic',
+    topics: [],
+  },
+  {
     title: 'Grammar',
     topics: [
       {

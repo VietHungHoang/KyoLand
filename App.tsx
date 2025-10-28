@@ -12,9 +12,14 @@ import CreateDictationTopicModal from './components/CreateDictationTopicModal';
 import DictationTopicDetailView from './components/DictationTopicDetailView';
 import PracticeSetupView from './components/PracticeSetupView';
 import QuizView from './components/QuizView';
+import ToeicLandingView from './components/ToeicLandingView';
+import ToeicPartSelectionView from './components/ToeicPartSelectionView';
+import ToeicTestSelectionView from './components/ToeicTestSelectionView';
+import ToeicQuizView from './components/ToeicQuizView';
+
 import { SIDEBAR_SECTIONS_INITIAL } from './constants';
 import type { Topic, VocabularyWord, SidebarSection, DictationTopic, QuizQuestion } from './types';
-import { BookOpenIcon, Icon, MicrophoneIcon, WifiIcon, AcademicCapIcon } from './components/icons/Icons';
+import { BookOpenIcon, Icon, MicrophoneIcon, WifiIcon, AcademicCapIcon, QueueListIcon } from './components/icons/Icons';
 
 const App: React.FC = () => {
   // Vocabulary State
@@ -74,6 +79,11 @@ const App: React.FC = () => {
   const [practiceTopicId, setPracticeTopicId] = useState<string | null>(null);
   const [activeQuiz, setActiveQuiz] = useState<{ questions: QuizQuestion[]; words: VocabularyWord[] } | null>(null);
 
+  // TOEIC State
+  const [toeicView, setToeicView] = useState<'main' | 'parts' | 'tests' | 'quiz'>('main');
+  const [selectedToeicSet, setSelectedToeicSet] = useState<string | null>(null);
+  const [selectedToeicPart, setSelectedToeicPart] = useState<number | null>(null);
+  const [selectedToeicTest, setSelectedToeicTest] = useState<number | null>(null);
 
   useEffect(() => {
     const storedApiKey = localStorage.getItem('gemini-api-key');
@@ -236,14 +246,13 @@ const App: React.FC = () => {
     setActiveQuiz(null);
   };
   
-  // Combine all sections for sidebar display
-  const displayedSidebarSections = SIDEBAR_SECTIONS_INITIAL.map(s => {
-    if (s.title === 'Vocabulary') return { title: 'Vocabulary', topics: [] }; // The topics themselves are not rendered in sidebar
-    if (s.title === 'Vocabulary-API') return { title: 'Vocabulary-API', topics: [{ id: 'vocab-api', name: 'Vocabulary API', icon: 'WifiIcon' }] };
-    if (s.title === 'Dictation') return { title: 'Dictation', topics: [{ id: 'dict', name: 'Dictation', icon: 'MicrophoneIcon' }] };
-    return s;
-  });
-
+  const resetToeicState = () => {
+    setToeicView('main');
+    setSelectedToeicSet(null);
+    setSelectedToeicPart(null);
+    setSelectedToeicTest(null);
+  };
+  
   const renderContent = () => {
     if (activeQuiz) {
         return <QuizView quizData={activeQuiz} onFinishQuiz={handleFinishQuiz} onBack={() => setActiveQuiz(null)} apiKey={apiKey}/>
@@ -269,6 +278,21 @@ const App: React.FC = () => {
         return <DictationTopicDetailView topic={activeDictationTopic} onUpdateTopic={handleUpdateDictationTopic} apiKey={apiKey} />;
       }
       return <DictationView topics={dictationTopics} onOpenCreateTopicModal={() => setIsCreateDictationModalOpen(true)} onDeleteTopic={handleDeleteTopic} onSelectTopic={setActiveTopicId} />;
+    }
+
+    if (selectedSection === 'Toeic') {
+        switch (toeicView) {
+            case 'main':
+                return <ToeicLandingView onSelectSet={(set) => { setSelectedToeicSet(set); setToeicView('parts'); }} />;
+            case 'parts':
+                return <ToeicPartSelectionView onSelectPart={(part) => { setSelectedToeicPart(part); setToeicView('tests'); }} />;
+            case 'tests':
+                return <ToeicTestSelectionView partNumber={selectedToeicPart!} onSelectTest={(test) => { setSelectedToeicTest(test); setToeicView('quiz'); }} />;
+            case 'quiz':
+                return <ToeicQuizView partNumber={selectedToeicPart!} testNumber={selectedToeicTest!} apiKey={apiKey} onFinish={resetToeicState} />;
+            default:
+                return null;
+        }
     }
     
     if (selectedSection === 'Grammar') {
@@ -306,7 +330,7 @@ const App: React.FC = () => {
             onBack: () => setPracticeTopicId(null),
         }
     }
-    if (activeTopicId) {
+    if (activeTopicId && (selectedSection === 'Vocabulary' || selectedSection === 'Dictation')) {
       const activeTopic = activeVocabTopic || activeDictationTopic;
       return {
         title: activeTopic?.name || 'Topic',
@@ -330,6 +354,18 @@ const App: React.FC = () => {
         showBackButton: false,
       }
     }
+    if (selectedSection === 'Toeic') {
+        switch (toeicView) {
+            case 'main':
+                return { title: 'TOEIC Practice', icon: <QueueListIcon className="w-5 h-5"/>, showBackButton: false };
+            case 'parts':
+                return { title: `${selectedToeicSet} Test`, icon: <QueueListIcon className="w-5 h-5"/>, showBackButton: true, onBack: () => { setToeicView('main'); setSelectedToeicSet(null); }};
+            case 'tests':
+                return { title: `Part ${selectedToeicPart} Practice`, icon: <QueueListIcon className="w-5 h-5"/>, showBackButton: true, onBack: () => { setToeicView('parts'); setSelectedToeicPart(null); }};
+            case 'quiz':
+                return { title: `Part ${selectedToeicPart} - Test ${selectedToeicTest}`, icon: <QueueListIcon className="w-5 h-5"/>, showBackButton: true, onBack: () => { setToeicView('tests'); setSelectedToeicTest(null); }};
+        }
+    }
     return {
       title: 'Vocabulary',
       icon: <BookOpenIcon className="w-5 h-5" />,
@@ -340,12 +376,13 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen bg-background text-onSurface font-sans">
       <Sidebar
-        sections={displayedSidebarSections}
+        sections={SIDEBAR_SECTIONS_INITIAL}
         selectedSection={selectedSection}
         onSelectSection={(section) => {
           setActiveTopicId(null);
           setPracticeTopicId(null);
           setActiveQuiz(null);
+          resetToeicState();
           setSelectedSection(section);
         }}
         onOpenSettingsModal={() => setIsSettingsModalOpen(true)}

@@ -52,3 +52,15 @@ export interface QuizQuestion {
   options: string[];
   answer: string;
 }
+
+export interface ToeicQuestion {
+  questionNumber: number;
+  audio: string;
+  question: string; // This is the transcript for the main question audio
+  options: {
+    A: string; // Transcript for option A
+    B: string; // Transcript for option B
+    C:string; // Transcript for option C
+  };
+  answer: 'A' | 'B' | 'C';
+}
