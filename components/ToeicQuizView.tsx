@@ -224,7 +224,7 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
 
     if (error) {
         return (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-3xl mx-auto">
                 <div className="bg-red-50 border border-red-200 text-red-800 p-6 rounded-lg">
                     <h3 className="text-xl font-bold mb-2">Error Loading Test Data</h3>
                     <p className="mb-4">{error}</p>
@@ -256,7 +256,7 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
     }
 
     return (
-        <div ref={quizViewRef} className="max-w-4xl mx-auto">
+        <div ref={quizViewRef} className="max-w-3xl mx-auto">
             <div className="bg-surface rounded-xl shadow-sm border border-stroke p-8">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold text-onSurface">Question {currentQuestion.questionNumber}</h2>

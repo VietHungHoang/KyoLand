@@ -12,7 +12,7 @@ const ToeicPartSelectionView: React.FC<{ onSelectPart: (part: number) => void }>
   ];
 
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-stroke p-8">
+    <div className="max-w-3xl mx-auto bg-surface rounded-xl shadow-sm border border-stroke p-8">
       <h1 className="text-4xl font-bold text-onSurface mb-2">Select a Part</h1>
       <p className="text-onSurfaceSecondary text-xl mb-8">Choose which part of the TOEIC test you want to practice.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

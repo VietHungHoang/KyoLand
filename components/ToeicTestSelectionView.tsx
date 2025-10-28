@@ -4,7 +4,7 @@ const ToeicTestSelectionView: React.FC<{ partNumber: number; onSelectTest: (test
   const tests = Array.from({ length: 10 }, (_, i) => i + 1);
 
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-stroke p-8">
+    <div className="max-w-3xl mx-auto bg-surface rounded-xl shadow-sm border border-stroke p-8">
       <h1 className="text-4xl font-bold text-onSurface mb-2">Part {partNumber} - Select a Test</h1>
       <p className="text-onSurfaceSecondary text-xl mb-8">Choose which test you'd like to attempt.</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">

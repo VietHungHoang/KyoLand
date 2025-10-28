@@ -5,7 +5,7 @@ const ToeicLandingView: React.FC<{ onSelectSet: (set: string) => void }> = ({ on
   const sets = [{ id: 'ETS2024', name: 'ETS 2024', description: 'Official practice tests for the 2024 season.' }];
 
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-stroke p-8">
+    <div className="max-w-3xl mx-auto bg-surface rounded-xl shadow-sm border border-stroke p-8">
       <h1 className="text-4xl font-bold text-onSurface mb-2">TOEIC Test Sets</h1>
       <p className="text-onSurfaceSecondary text-xl mb-8">Choose a test set to begin your practice.</p>
       <div className="space-y-4">
