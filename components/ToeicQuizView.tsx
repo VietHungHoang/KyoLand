@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import type { ToeicQuestion } from '../types';
-import { PlayIcon, CheckCircleIcon, XCircleIcon, EyeIcon, ForwardIcon, SparklesIcon, VolumeUpIcon } from './icons/Icons';
+import { CheckCircleIcon, XCircleIcon, EyeIcon, ForwardIcon, SparklesIcon } from './icons/Icons';
 
 interface ToeicQuizViewProps {
   partNumber: number;
@@ -20,7 +20,8 @@ const DictationInput: React.FC<{
     onChange: (value: string) => void;
     onEnter: () => void;
     onShowAnswer: () => void;
-}> = ({ label, value, status, onChange, onEnter, onShowAnswer }) => {
+    userAttempt: string | null;
+}> = ({ label, value, correctAnswer, status, onChange, onEnter, onShowAnswer, userAttempt }) => {
     const statusClasses = {
         unanswered: 'border-stroke focus:border-primary',
         correct: 'border-green-500 bg-green-50',
@@ -46,6 +47,11 @@ const DictationInput: React.FC<{
                     <EyeIcon className="w-5 h-5" />
                 </button>
             </div>
+            {userAttempt && status === 'correct' && (
+                 <div className="text-xs text-onSurfaceSecondary mt-1">
+                    Your answer: <span className="line-through text-red-600">{userAttempt}</span>
+                 </div>
+            )}
         </div>
     );
 };
@@ -68,11 +74,18 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
         b: 'unanswered' as DictationStatus,
         c: 'unanswered' as DictationStatus
     });
+    const [userDictationAttempts, setUserDictationAttempts] = useState({
+        q: null as string | null,
+        a: null as string | null,
+        b: null as string | null,
+        c: null as string | null,
+    });
 
     const [explanations, setExplanations] = useState<Record<number, string>>({});
     const [isFetchingExplanation, setIsFetchingExplanation] = useState(false);
     
     const audioRef = useRef<HTMLAudioElement>(null);
+    const quizViewRef = useRef<HTMLDivElement>(null);
 
     const currentQuestion = questions[currentQuestionIndex];
     const audioBaseUrl = `https://data.toeicets.com/2024/test${testNumber}/audio/`;
@@ -82,6 +95,7 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
         setIsAnswerChecked(false);
         setDictationInputs({ q: '', a: '', b: '', c: '' });
         setDictationStatuses({ q: 'unanswered', a: 'unanswered', b: 'unanswered', c: 'unanswered' });
+        setUserDictationAttempts({ q: null, a: null, b: null, c: null });
     };
 
     const fetchData = useCallback(async (url: string) => {
@@ -134,22 +148,12 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
             audioRef.current.play().catch(e => console.error("Audio playback failed", e));
         }
     }, [currentQuestion, audioBaseUrl]);
-    
-    useEffect(() => {
-        const allCorrect = Object.values(dictationStatuses).every(s => s === 'correct');
-        if (allCorrect) {
-            const timer = setTimeout(() => {
-                handleNextQuestion();
-            }, 1200);
-            return () => clearTimeout(timer);
-        }
-    }, [dictationStatuses, currentQuestionIndex]);
-
 
     const handleNextQuestion = () => {
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
             resetCurrentQuestionState();
+            quizViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
             onFinish();
         }
@@ -173,6 +177,10 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
     };
 
     const handleShowDictationAnswer = (part: 'q' | 'a' | 'b' | 'c') => {
+        if (dictationStatuses[part] !== 'correct') {
+            setUserDictationAttempts(prev => ({ ...prev, [part]: dictationInputs[part] }));
+        }
+        
         const correctAnswers = {
             q: currentQuestion.question,
             a: currentQuestion.options.A,
@@ -184,9 +192,14 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
     };
 
     const handleFetchExplanation = async () => {
-        if (!apiKey || !currentQuestion) {
+        if (!apiKey) {
+            setExplanations(prev => ({ ...prev, [currentQuestionIndex]: "API Key not found. Please add your Gemini API key in the settings (bottom left corner)." }));
+            return;
+        }
+        if (!currentQuestion) {
           return;
         }
+
         setIsFetchingExplanation(true);
         try {
           const ai = new GoogleGenAI({ apiKey });
@@ -199,7 +212,7 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
           setExplanations(prev => ({ ...prev, [currentQuestionIndex]: response.text }));
         } catch (err) {
           console.error("Error fetching explanation:", err);
-          setExplanations(prev => ({ ...prev, [currentQuestionIndex]: "Could not load explanation." }));
+          setExplanations(prev => ({ ...prev, [currentQuestionIndex]: "Could not load explanation. Please check your API key and network connection." }));
         } finally {
           setIsFetchingExplanation(false);
         }
@@ -211,27 +224,29 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
 
     if (error) {
         return (
-            <div className="bg-red-50 border border-red-200 text-red-800 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-2">Error Loading Test Data</h3>
-                <p className="mb-4">{error}</p>
-                {showUrlInput && (
-                    <div className="space-y-4">
-                        <label htmlFor="data-url" className="block font-semibold">Data File URL</label>
-                        <input
-                            id="data-url"
-                            type="text"
-                            value={customUrl}
-                            onChange={(e) => setCustomUrl(e.target.value)}
-                            className="w-full px-3 py-2 bg-white border border-red-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
-                        />
-                        <button
-                            onClick={() => fetchData(customUrl)}
-                            className="px-4 py-2 bg-primary text-onPrimary font-semibold rounded-lg hover:bg-primary-dark"
-                        >
-                            Retry
-                        </button>
-                    </div>
-                )}
+            <div className="max-w-4xl mx-auto">
+                <div className="bg-red-50 border border-red-200 text-red-800 p-6 rounded-lg">
+                    <h3 className="text-xl font-bold mb-2">Error Loading Test Data</h3>
+                    <p className="mb-4">{error}</p>
+                    {showUrlInput && (
+                        <div className="space-y-4">
+                            <label htmlFor="data-url" className="block font-semibold">Data File URL</label>
+                            <input
+                                id="data-url"
+                                type="text"
+                                value={customUrl}
+                                onChange={(e) => setCustomUrl(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-red-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
+                            />
+                            <button
+                                onClick={() => fetchData(customUrl)}
+                                className="px-4 py-2 bg-primary text-onPrimary font-semibold rounded-lg hover:bg-primary-dark"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
@@ -241,81 +256,82 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
     }
 
     return (
-        <div className="bg-surface rounded-xl shadow-sm border border-stroke p-8">
-            <audio ref={audioRef} hidden />
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-onSurface">Question {currentQuestion.questionNumber}</h2>
-                <button onClick={() => audioRef.current?.play()} className="p-2 rounded-full hover:bg-gray-100 text-onSurfaceSecondary disabled:text-gray-300" disabled={!isAnswerChecked && selectedAnswer !== null}>
-                    <VolumeUpIcon className="w-6 h-6"/>
-                </button>
-            </div>
-
-            <div className="space-y-8">
-                {/* Top: Multiple Choice */}
-                <div>
-                    <h3 className="text-lg font-semibold text-onSurface mb-4">1. Choose the best response.</h3>
-                    <div className="space-y-3">
-                        {(['A', 'B', 'C'] as const).map(option => {
-                            let status: 'unanswered' | 'correct' | 'incorrect' = 'unanswered';
-                            if (isAnswerChecked) {
-                                if (option === currentQuestion.answer) status = 'correct';
-                                else if (option === selectedAnswer) status = 'incorrect';
-                            }
-                            const baseClasses = "w-full text-left p-3 rounded-lg border text-base transition-all duration-200 flex items-center";
-                            const statusClasses = {
-                                unanswered: "bg-background border-stroke hover:bg-primary/10 hover:border-primary",
-                                correct: "bg-green-100 border-green-500 text-green-800 font-semibold",
-                                incorrect: "bg-red-100 border-red-500 text-red-800 font-semibold"
-                            };
-                            return (
-                                <button key={option} onClick={() => setSelectedAnswer(option)} disabled={isAnswerChecked} className={`${baseClasses} ${status === 'unanswered' && selectedAnswer === option ? 'bg-primary/10 border-primary' : statusClasses[status]}`}>
-                                    <span className="font-bold mr-3">{option}.</span>
-                                    {isAnswerChecked && status === 'correct' && <CheckCircleIcon className="w-5 h-5 mr-2"/>}
-                                    {isAnswerChecked && status === 'incorrect' && <XCircleIcon className="w-5 h-5 mr-2"/>}
-                                    Listen to response
-                                </button>
-                            );
-                        })}
-                    </div>
-                    <button onClick={handleCheckAnswer} disabled={!selectedAnswer || isAnswerChecked} className="mt-4 w-full bg-primary text-onPrimary px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        Check
-                    </button>
+        <div ref={quizViewRef} className="max-w-4xl mx-auto">
+            <div className="bg-surface rounded-xl shadow-sm border border-stroke p-8">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-semibold text-onSurface">Question {currentQuestion.questionNumber}</h2>
                 </div>
-                
-                {/* Bottom: Dictation */}
-                <div>
-                     <h3 className="text-lg font-semibold text-onSurface mb-4">2. Listen and write.</h3>
-                     <div className="space-y-3 bg-background p-4 rounded-lg border border-stroke">
-                        <DictationInput label="Question" value={dictationInputs.q} status={dictationStatuses.q} onChange={v => setDictationInputs(p => ({...p, q:v}))} onEnter={() => handleDictationCheck('q')} onShowAnswer={() => handleShowDictationAnswer('q')} />
-                        <DictationInput label="Response A" value={dictationInputs.a} status={dictationStatuses.a} onChange={v => setDictationInputs(p => ({...p, a:v}))} onEnter={() => handleDictationCheck('a')} onShowAnswer={() => handleShowDictationAnswer('a')} />
-                        <DictationInput label="Response B" value={dictationInputs.b} status={dictationStatuses.b} onChange={v => setDictationInputs(p => ({...p, b:v}))} onEnter={() => handleDictationCheck('b')} onShowAnswer={() => handleShowDictationAnswer('b')} />
-                        <DictationInput label="Response C" value={dictationInputs.c} status={dictationStatuses.c} onChange={v => setDictationInputs(p => ({...p, c:v}))} onEnter={() => handleDictationCheck('c')} onShowAnswer={() => handleShowDictationAnswer('c')} />
-                     </div>
-                </div>
-            </div>
 
-            {/* Explanation Section */}
-            {isAnswerChecked && (
-                <div className="mt-6 border-t border-stroke pt-6">
-                    {explanations[currentQuestionIndex] ? (
-                        <div className="bg-background p-4 rounded-lg border border-stroke">
-                            <h4 className="text-lg font-semibold text-onSurface mb-2">Explanation</h4>
-                            <pre className="text-onSurfaceSecondary whitespace-pre-wrap font-sans text-base">{explanations[currentQuestionIndex]}</pre>
+                <div className="space-y-8">
+                    {/* Top: Multiple Choice */}
+                    <div>
+                        <h3 className="text-lg font-semibold text-onSurface mb-4">1. Choose the best response.</h3>
+                        <div className="space-y-3">
+                            {(['A', 'B', 'C'] as const).map(option => {
+                                let status: 'unanswered' | 'correct' | 'incorrect' = 'unanswered';
+                                if (isAnswerChecked) {
+                                    if (option === currentQuestion.answer) status = 'correct';
+                                    else if (option === selectedAnswer) status = 'incorrect';
+                                }
+                                const baseClasses = "w-full text-left p-3 rounded-lg border text-base transition-all duration-200 flex items-center";
+                                const statusClasses = {
+                                    unanswered: "bg-background border-stroke hover:bg-primary/10 hover:border-primary",
+                                    correct: "bg-green-100 border-green-500 text-green-800 font-semibold",
+                                    incorrect: "bg-red-100 border-red-500 text-red-800 font-semibold"
+                                };
+                                return (
+                                    <button key={option} onClick={() => setSelectedAnswer(option)} disabled={isAnswerChecked} className={`${baseClasses} ${status === 'unanswered' && selectedAnswer === option ? 'bg-primary/10 border-primary' : statusClasses[status]}`}>
+                                        <span className="font-bold mr-3">{option}.</span>
+                                        {isAnswerChecked && status === 'correct' && <CheckCircleIcon className="w-5 h-5 mr-2"/>}
+                                        {isAnswerChecked && status === 'incorrect' && <XCircleIcon className="w-5 h-5 mr-2"/>}
+                                        Listen to response
+                                    </button>
+                                );
+                            })}
                         </div>
-                    ) : (
-                        <button onClick={handleFetchExplanation} disabled={isFetchingExplanation} className="flex items-center bg-secondary text-onPrimary px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
-                            <SparklesIcon className="w-4 h-4 mr-2"/>
-                            {isFetchingExplanation ? 'Loading...' : 'View Explanation with AI'}
+                        <button onClick={handleCheckAnswer} disabled={!selectedAnswer || isAnswerChecked} className="mt-4 w-full bg-primary text-onPrimary px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Check
+                        </button>
+                         <audio controls ref={audioRef} className="w-full mt-4" />
+                    </div>
+                    
+                    {/* Bottom: Dictation */}
+                    <div>
+                         <h3 className="text-lg font-semibold text-onSurface mb-4">2. Listen and write.</h3>
+                         <div className="space-y-3 bg-background p-4 rounded-lg border border-stroke">
+                            <DictationInput label="Question" value={dictationInputs.q} correctAnswer={currentQuestion.question} status={dictationStatuses.q} onChange={v => setDictationInputs(p => ({...p, q:v}))} onEnter={() => handleDictationCheck('q')} onShowAnswer={() => handleShowDictationAnswer('q')} userAttempt={userDictationAttempts.q} />
+                            <DictationInput label="Response A" value={dictationInputs.a} correctAnswer={currentQuestion.options.A} status={dictationStatuses.a} onChange={v => setDictationInputs(p => ({...p, a:v}))} onEnter={() => handleDictationCheck('a')} onShowAnswer={() => handleShowDictationAnswer('a')} userAttempt={userDictationAttempts.a} />
+                            <DictationInput label="Response B" value={dictationInputs.b} correctAnswer={currentQuestion.options.B} status={dictationStatuses.b} onChange={v => setDictationInputs(p => ({...p, b:v}))} onEnter={() => handleDictationCheck('b')} onShowAnswer={() => handleShowDictationAnswer('b')} userAttempt={userDictationAttempts.b} />
+                            <DictationInput label="Response C" value={dictationInputs.c} correctAnswer={currentQuestion.options.C} status={dictationStatuses.c} onChange={v => setDictationInputs(p => ({...p, c:v}))} onEnter={() => handleDictationCheck('c')} onShowAnswer={() => handleShowDictationAnswer('c')} userAttempt={userDictationAttempts.c} />
+                         </div>
+                    </div>
+                </div>
+
+                {/* Explanation Section */}
+                {isAnswerChecked && (
+                    <div className="mt-6 border-t border-stroke pt-6">
+                        {explanations[currentQuestionIndex] ? (
+                            <div className="bg-background p-4 rounded-lg border border-stroke">
+                                <h4 className="text-lg font-semibold text-onSurface mb-2">Explanation</h4>
+                                <pre className="text-onSurfaceSecondary whitespace-pre-wrap font-sans text-base">{explanations[currentQuestionIndex]}</pre>
+                            </div>
+                        ) : (
+                            <button onClick={handleFetchExplanation} disabled={isFetchingExplanation} className="flex items-center bg-secondary text-onPrimary px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+                                <SparklesIcon className="w-4 h-4 mr-2"/>
+                                {isFetchingExplanation ? 'Loading...' : 'View Explanation with AI'}
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Bottom Controls */}
+                <div className="mt-8 flex justify-end">
+                    {isAnswerChecked && (
+                        <button onClick={handleNextQuestion} className="flex items-center bg-primary text-onPrimary px-6 py-2 rounded-lg font-semibold hover:bg-primary-dark transition-colors">
+                            Continue <ForwardIcon className="w-5 h-5 ml-2" />
                         </button>
                     )}
                 </div>
-            )}
-
-            {/* Bottom Controls */}
-            <div className="mt-8 flex justify-end">
-                 <button onClick={handleNextQuestion} className="flex items-center bg-gray-200 text-onSurface px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
-                    Skip <ForwardIcon className="w-5 h-5 ml-2" />
-                </button>
             </div>
         </div>
     );
