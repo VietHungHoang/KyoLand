@@ -12,16 +12,129 @@ interface ToeicQuizViewProps {
 
 type DictationStatus = 'unanswered' | 'correct' | 'incorrect';
 
+// --- Start Diff Helper Functions ---
+function getCommonPrefix(s1: string, s2: string): string {
+    let i = 0;
+    while (i < s1.length && i < s2.length && s1[i] === s2[i]) {
+        i++;
+    }
+    return s1.substring(0, i);
+}
+
+function getCommonSuffix(s1: string, s2: string): string {
+    let i = s1.length - 1;
+    let j = s2.length - 1;
+    let k = 0;
+    while (i >= 0 && j >= 0 && s1[i] === s2[j]) {
+        i--;
+        j--;
+        k++;
+    }
+    return s1.substring(s1.length - k);
+}
+
+function diffChars(userWord: string, correctWord: string): { text: string; isDifferent: boolean }[] {
+    if (!userWord) {
+        return [{ text: correctWord, isDifferent: true }];
+    }
+    const prefix = getCommonPrefix(userWord, correctWord);
+    const suffix = getCommonSuffix(userWord.substring(prefix.length), correctWord.substring(prefix.length));
+
+    const userMiddle = userWord.substring(prefix.length, userWord.length - suffix.length);
+    const correctMiddle = correctWord.substring(prefix.length, correctWord.length - suffix.length);
+
+    const parts = [];
+    if (prefix) {
+        parts.push({ text: prefix, isDifferent: false });
+    }
+    if (correctMiddle) {
+        parts.push({ text: correctMiddle, isDifferent: true });
+    }
+    if (suffix) {
+        parts.push({ text: suffix, isDifferent: false });
+    }
+
+    if (parts.length === 0 && correctWord) {
+      return [{ text: correctWord, isDifferent: false }];
+    }
+
+    return parts;
+}
+
+
+function createDiff(userInput: string, correctAnswer: string): { text: string; isDifferent: boolean }[] {
+  const clean = (s: string) => s.trim().toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "").replace(/\s+/g, ' ');
+  const userWords = clean(userInput).split(' ').filter(Boolean);
+  const correctWords = clean(correctAnswer).split(' ').filter(Boolean);
+
+  const dp = Array(userWords.length + 1).fill(null).map(() => Array(correctWords.length + 1).fill(0));
+  for (let i = 0; i <= userWords.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= correctWords.length; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= userWords.length; i++) {
+    for (let j = 1; j <= correctWords.length; j++) {
+      const cost = userWords[i - 1] === correctWords[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  const resultParts: { text: string; isDifferent: boolean }[] = [];
+  let i = userWords.length;
+  let j = correctWords.length;
+  while (i > 0 || j > 0) {
+    const cost = (i > 0 && j > 0 && userWords[i - 1] === correctWords[j - 1]) ? 0 : 1;
+    if (i > 0 && j > 0 && dp[i][j] === dp[i - 1][j - 1] + cost) {
+        resultParts.unshift({ text: ' ', isDifferent: false });
+        if (cost === 0) {
+            resultParts.unshift({ text: correctWords[j - 1], isDifferent: false });
+        } else {
+            const charDiffs = diffChars(userWords[i-1], correctWords[j-1]);
+            resultParts.unshift(...charDiffs);
+        }
+        i--;
+        j--;
+    } else if (j > 0 && (i === 0 || dp[i][j] === dp[i][j - 1] + 1)) {
+        resultParts.unshift({ text: ' ', isDifferent: false });
+        resultParts.unshift({ text: correctWords[j - 1], isDifferent: true });
+        j--;
+    } else { // Deletion
+        i--;
+    }
+  }
+
+  if (resultParts.length > 0 && resultParts[0].text === ' ') {
+    resultParts.shift();
+  }
+  
+  // Re-join adjacent parts of the same type
+  if (resultParts.length === 0) return [];
+  const finalResult = [resultParts[0]];
+  for(let k = 1; k < resultParts.length; k++) {
+      if (resultParts[k].isDifferent === finalResult[finalResult.length-1].isDifferent) {
+          finalResult[finalResult.length-1].text += resultParts[k].text;
+      } else {
+          finalResult.push(resultParts[k]);
+      }
+  }
+  
+  return finalResult;
+}
+// --- End Diff Helper Functions ---
+
+
 const DictationInput: React.FC<{
     label: string;
     value: string;
-    correctAnswer: string;
     status: DictationStatus;
     onChange: (value: string) => void;
     onEnter: () => void;
     onShowAnswer: () => void;
-    userAttempt: string | null;
-}> = ({ label, value, correctAnswer, status, onChange, onEnter, onShowAnswer, userAttempt }) => {
+    richDiff: { text: string; isDifferent: boolean }[] | null;
+}> = ({ label, value, status, onChange, onEnter, onShowAnswer, richDiff }) => {
     const statusClasses = {
         unanswered: 'border-stroke focus:border-primary',
         correct: 'border-green-500 bg-green-50',
@@ -31,14 +144,24 @@ const DictationInput: React.FC<{
         <div>
             <label className="block text-sm font-medium text-onSurfaceSecondary mb-1">{label}</label>
             <div className="relative">
-                <input
-                    type="text"
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && onEnter()}
-                    className={`w-full p-2 pr-10 border rounded-md transition-colors bg-background ${statusClasses[status]}`}
-                    disabled={status === 'correct'}
-                />
+                {status === 'correct' && richDiff ? (
+                    <div className="w-full p-2 border rounded-md transition-colors bg-green-50 border-green-500 min-h-[42px] whitespace-pre-wrap">
+                        {richDiff.map((part, index) => (
+                            <span key={index} className={part.isDifferent ? 'text-red-600 font-semibold' : 'text-gray-800'}>
+                                {part.text}
+                            </span>
+                        ))}
+                    </div>
+                ) : (
+                    <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && onEnter()}
+                        className={`w-full p-2 pr-10 border rounded-md transition-colors bg-background ${statusClasses[status]}`}
+                        disabled={status === 'correct'}
+                    />
+                )}
                 <button
                     onClick={onShowAnswer}
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-onSurfaceSecondary hover:text-primary"
@@ -47,11 +170,6 @@ const DictationInput: React.FC<{
                     <EyeIcon className="w-5 h-5" />
                 </button>
             </div>
-            {userAttempt && status === 'correct' && (
-                 <div className="text-xs text-onSurfaceSecondary mt-1">
-                    Your answer: <span className="line-through text-red-600">{userAttempt}</span>
-                 </div>
-            )}
         </div>
     );
 };
@@ -74,12 +192,13 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
         b: 'unanswered' as DictationStatus,
         c: 'unanswered' as DictationStatus
     });
-    const [userDictationAttempts, setUserDictationAttempts] = useState({
-        q: null as string | null,
-        a: null as string | null,
-        b: null as string | null,
-        c: null as string | null,
+    const [dictationRichDiffs, setDictationRichDiffs] = useState({
+        q: null as { text: string; isDifferent: boolean }[] | null,
+        a: null as { text: string; isDifferent: boolean }[] | null,
+        b: null as { text: string; isDifferent: boolean }[] | null,
+        c: null as { text: string; isDifferent: boolean }[] | null,
     });
+
 
     const [explanations, setExplanations] = useState<Record<number, string>>({});
     const [isFetchingExplanation, setIsFetchingExplanation] = useState(false);
@@ -95,7 +214,7 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
         setIsAnswerChecked(false);
         setDictationInputs({ q: '', a: '', b: '', c: '' });
         setDictationStatuses({ q: 'unanswered', a: 'unanswered', b: 'unanswered', c: 'unanswered' });
-        setUserDictationAttempts({ q: null, a: null, b: null, c: null });
+        setDictationRichDiffs({ q: null, a: null, b: null, c: null });
     };
 
     const fetchData = useCallback(async (url: string) => {
@@ -172,22 +291,23 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
             b: currentQuestion.options.B,
             c: currentQuestion.options.C,
         };
-        const isCorrect = dictationInputs[part].trim().toLowerCase() === correctAnswers[part].trim().toLowerCase();
+        const clean = (s: string) => s.trim().toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+        const isCorrect = clean(dictationInputs[part]) === clean(correctAnswers[part]);
         setDictationStatuses(prev => ({ ...prev, [part]: isCorrect ? 'correct' : 'incorrect' }));
+        if(isCorrect){
+            handleShowDictationAnswer(part);
+        }
     };
 
     const handleShowDictationAnswer = (part: 'q' | 'a' | 'b' | 'c') => {
-        if (dictationStatuses[part] !== 'correct') {
-            setUserDictationAttempts(prev => ({ ...prev, [part]: dictationInputs[part] }));
-        }
-        
         const correctAnswers = {
             q: currentQuestion.question,
             a: currentQuestion.options.A,
             b: currentQuestion.options.B,
             c: currentQuestion.options.C,
         };
-        setDictationInputs(prev => ({ ...prev, [part]: correctAnswers[part] }));
+        const diffResult = createDiff(dictationInputs[part], correctAnswers[part]);
+        setDictationRichDiffs(prev => ({...prev, [part]: diffResult }));
         setDictationStatuses(prev => ({ ...prev, [part]: 'correct' }));
     };
 
@@ -208,7 +328,7 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
             Correct Answer (${currentQuestion.answer}): "${currentQuestion.options[currentQuestion.answer]}"
             Provide a clear translation, analysis of why the answer is the best response, and explain key vocabulary.`;
 
-          const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+          const response = await ai.models.generateContent({ model: "gem-2.5-flash", contents: prompt });
           setExplanations(prev => ({ ...prev, [currentQuestionIndex]: response.text }));
         } catch (err) {
           console.error("Error fetching explanation:", err);
@@ -299,10 +419,10 @@ const ToeicQuizView: React.FC<ToeicQuizViewProps> = ({ partNumber, testNumber, a
                     <div>
                          <h3 className="text-lg font-semibold text-onSurface mb-4">2. Listen and write.</h3>
                          <div className="space-y-3 bg-background p-4 rounded-lg border border-stroke">
-                            <DictationInput label="Question" value={dictationInputs.q} correctAnswer={currentQuestion.question} status={dictationStatuses.q} onChange={v => setDictationInputs(p => ({...p, q:v}))} onEnter={() => handleDictationCheck('q')} onShowAnswer={() => handleShowDictationAnswer('q')} userAttempt={userDictationAttempts.q} />
-                            <DictationInput label="Response A" value={dictationInputs.a} correctAnswer={currentQuestion.options.A} status={dictationStatuses.a} onChange={v => setDictationInputs(p => ({...p, a:v}))} onEnter={() => handleDictationCheck('a')} onShowAnswer={() => handleShowDictationAnswer('a')} userAttempt={userDictationAttempts.a} />
-                            <DictationInput label="Response B" value={dictationInputs.b} correctAnswer={currentQuestion.options.B} status={dictationStatuses.b} onChange={v => setDictationInputs(p => ({...p, b:v}))} onEnter={() => handleDictationCheck('b')} onShowAnswer={() => handleShowDictationAnswer('b')} userAttempt={userDictationAttempts.b} />
-                            <DictationInput label="Response C" value={dictationInputs.c} correctAnswer={currentQuestion.options.C} status={dictationStatuses.c} onChange={v => setDictationInputs(p => ({...p, c:v}))} onEnter={() => handleDictationCheck('c')} onShowAnswer={() => handleShowDictationAnswer('c')} userAttempt={userDictationAttempts.c} />
+                            <DictationInput label="Question" value={dictationInputs.q} status={dictationStatuses.q} onChange={v => setDictationInputs(p => ({...p, q:v}))} onEnter={() => handleDictationCheck('q')} onShowAnswer={() => handleShowDictationAnswer('q')} richDiff={dictationRichDiffs.q} />
+                            <DictationInput label="Response A" value={dictationInputs.a} status={dictationStatuses.a} onChange={v => setDictationInputs(p => ({...p, a:v}))} onEnter={() => handleDictationCheck('a')} onShowAnswer={() => handleShowDictationAnswer('a')} richDiff={dictationRichDiffs.a} />
+                            <DictationInput label="Response B" value={dictationInputs.b} status={dictationStatuses.b} onChange={v => setDictationInputs(p => ({...p, b:v}))} onEnter={() => handleDictationCheck('b')} onShowAnswer={() => handleShowDictationAnswer('b')} richDiff={dictationRichDiffs.b} />
+                            <DictationInput label="Response C" value={dictationInputs.c} status={dictationStatuses.c} onChange={v => setDictationInputs(p => ({...p, c:v}))} onEnter={() => handleDictationCheck('c')} onShowAnswer={() => handleShowDictationAnswer('c')} richDiff={dictationRichDiffs.c} />
                          </div>
                     </div>
                 </div>
